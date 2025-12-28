@@ -68,9 +68,9 @@ This project represents a complete, well-documented, and highly sophisticated ob
 
 To run the examples and utilize the framework:
 
-1.  **Clone the Repository (conceptual):**
+1.  **Clone the Repository:**
     ```bash
-    git clone <repository_url> quantum_sim
+    git clone https://github.com/NeuralBlitz/quantum_sim quantum_sim
     cd quantum_sim
     ```
 2.  **Install Dependencies:**
