@@ -13,12 +13,10 @@ from quantum_sim.backends.numpy_backend import NumpyBackend
 from quantum_sim.utils.expectation_value import ExpectationValueCalculator
 from quantum_sim.gates.qaoa_cost_layer import QAOACostLayer
 from quantum_sim.gates.qaoa_mixer_layer import QAOAMixerLayer
-from quantum_sim.gates.single_qubit_gates import Hadamard
 from quantum_sim.gates.hadamard_block import HadamardBlock
 from quantum_sim.core.register import Register
 
 
-# Re-defining create_qaoa_ansatz here to avoid circular imports
 def create_qaoa_ansatz_for_mapper(graph: nx.Graph, p_layers: int) -> QuantumCircuit:
     """
     Helper to construct the QAOA ansatz circuit for Max-Cut for the SweetSpotMapper.
@@ -28,7 +26,7 @@ def create_qaoa_ansatz_for_mapper(graph: nx.Graph, p_layers: int) -> QuantumCirc
     
     initial_register = Register(size=num_qubits)
     initial_hadamard_block = HadamardBlock(initial_register, name="InitialHadamard")
-    qaoa_circuit.add_sub_circuit(initial_hadamard_block, qubit_map_for_sub_circuit={i:i for i in range(num_qubits)})
+    qaoa_circuit.add_sub_circuit(initial_hadamard_block, qubit_map_for_sub_circuit={i: i for i in range(num_qubits)})
 
     for i in range(p_layers):
         gamma_param = Parameter(f"gamma_{i}")
@@ -37,11 +35,11 @@ def create_qaoa_ansatz_for_mapper(graph: nx.Graph, p_layers: int) -> QuantumCirc
         circuit_register = Register(size=num_qubits)
         
         cost_layer = QAOACostLayer(graph, circuit_register, gamma_param, name=f"CostLayer_{i}")
-        qaoa_circuit.add_sub_circuit(cost_layer, qubit_map_for_sub_circuit={j:j for j in range(num_qubits)},
+        qaoa_circuit.add_sub_circuit(cost_layer, qubit_map_for_sub_circuit={j: j for j in range(num_qubits)},
                                      param_prefix=f"layer{i}_cost")
         
         mixer_layer = QAOAMixerLayer(circuit_register, beta_param, name=f"MixerLayer_{i}")
-        qaoa_circuit.add_sub_circuit(mixer_layer, qubit_map_for_sub_circuit={j:j for j in range(num_qubits)},
+        qaoa_circuit.add_sub_circuit(mixer_layer, qubit_map_for_sub_circuit={j: j for j in range(num_qubits)},
                                      param_prefix=f"layer{i}_mixer")
 
     return qaoa_circuit
@@ -83,7 +81,11 @@ class SweetSpotMapper:
 
     def map_sweet_spot(self, max_p_layers: int = 6, optimizer_maxiter: int = 100) -> Dict[int, float]:
         print(f"--- Starting Sweet Spot Map (Max p={max_p_layers}) ---")
-        print(f"T1={list(self.t1_times.values())[0]*1e6:.0f}us, T2={list(self.t2_times.values())[0]*1e6:.0f}us, Depolarizing_p={self.depolarizing_noise_prob}")
+        
+        # Pull first T1 value for logging
+        t1_val = list(self.t1_times.values())[0] if self.t1_times else 0
+        t2_val = list(self.t2_times.values())[0] if self.t2_times else 0
+        print(f"T1={t1_val*1e6:.0f}us, T2={t2_val*1e6:.0f}us, Depolarizing_p={self.depolarizing_noise_prob}")
 
         exp_val_calculator = ExpectationValueCalculator(self.num_qubits)
         
@@ -124,10 +126,10 @@ class SweetSpotMapper:
         plt.grid(True, alpha=0.3)
         plt.xticks(p_values)
         
-        if energies:
-            best_p_idx = np.argmin(energies)
+        # Corrected variable reference to min_energies
+        if min_energies:
+            best_p_idx = np.argmin(min_energies)
             best_p_val = p_values[best_p_idx]
-            min_energy_val = energies[best_p_idx]
             
             plt.axvline(x=best_p_val, color='red', linestyle='--', label=f'Sweet Spot at p={best_p_val}')
             plt.legend()
