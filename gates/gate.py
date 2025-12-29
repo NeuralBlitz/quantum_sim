@@ -1,16 +1,18 @@
 # quantum_sim/gates/gate.py
 
 from abc import ABC, abstractmethod
-from typing import List, Any, Dict, Union
+from typing import Any, Dict
 import numpy as np
 from quantum_sim.core.parameter import Parameter
+
 
 class Gate(ABC):
     """
     Abstract Base Class for all quantum gates.
     Defines the common interface that all gates must implement.
-    Now includes a 'duration' attribute for time-dependent noise.
+    Includes a 'duration' attribute for hardware-realistic time-dependent noise.
     """
+
     def __init__(self, name: str, num_qubits: int, params: Dict[str, Parameter] = None, duration: float = 0.0):
         if not isinstance(name, str) or not name:
             raise ValueError("Gate name must be a non-empty string.")
@@ -31,8 +33,7 @@ class Gate(ABC):
     def to_unitary(self) -> np.ndarray:
         """
         Returns the unitary matrix representation of the gate.
-        If the gate is parametric, this method should ensure all required parameters
-        are bound before constructing the matrix.
+        Ensures all required parameters are bound before constructing the matrix.
         """
         pass
 
@@ -40,20 +41,26 @@ class Gate(ABC):
     def to_qiskit_instruction(self) -> Any:
         """
         Returns the corresponding Qiskit QuantumCircuit instruction.
-        If the gate is parametric, this method should ensure all required parameters
-        are bound before constructing the instruction.
+        Ensures all required parameters are bound before constructing the instruction.
         """
         pass
-        
+
     def get_parameters(self) -> Dict[str, Parameter]:
         """Returns a dictionary of symbolic parameters associated with the gate."""
         return self.params
 
     def __repr__(self) -> str:
-        param_str = ", ".join(f"{name}={param.get_value():.3f}" if param.is_bound() else f"{name}=unbound" for name, param in self.params.items())
+        param_list = []
+        for name, param in self.params.items():
+            val = f"{param.get_value():.3f}" if param.is_bound() else "unbound"
+            param_list.append(f"{name}={val}")
+
+        param_str = ", ".join(param_list)
         parts = [f"{self.name}Gate({self.num_qubits} qubits)"]
+
         if param_str:
             parts.append(f"({param_str})")
         if self.duration > 0:
             parts.append(f"[{self.duration*1e9:.0f}ns]")
+
         return "".join(parts)
