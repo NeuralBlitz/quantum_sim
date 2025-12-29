@@ -3,12 +3,14 @@
 from typing import List, Iterator
 from quantum_sim.core.qubit import Qubit
 
+
 class Register:
     """
     Represents a collection of qubits. This is useful for defining operations
     that act on a block of qubits, or for sub-circuits that have their own
     local qubit indexing.
     """
+
     def __init__(self, size: int, offset: int = 0):
         if not isinstance(size, int) or size <= 0:
             raise ValueError("Register size must be a positive integer.")
@@ -17,7 +19,8 @@ class Register:
 
         self.size = size
         self.offset = offset
-        self.qubits: List[Qubit] = [Qubit(offset + i) for i in range(size)]
+        # Fixed E741: Renamed 'i' to 'idx' for clarity and lint compliance
+        self.qubits: List[Qubit] = [Qubit(offset + idx) for idx in range(size)]
 
     def __len__(self) -> int:
         return self.size
