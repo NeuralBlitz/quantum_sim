@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.11"] # 3.9 is aging; 3.10+ is better for modern Numba/Type hinting
+        python-version: ["3.10", "3.11"]
 
     steps:
     - uses: actions/checkout@v4
@@ -29,29 +29,20 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
     - name: Configure Numba for CI
-      # Critical for your JIT kernels: ensures Numba doesn't try to use 
-      # more threads than the GitHub runner (2 cores) provides.
       run: echo "NUMBA_NUM_THREADS=2" >> $GITHUB_ENV
 
-        - name: Lint with flake8
+    - name: Lint with flake8
       run: |
-        # Step 1: Critical Syntax Errors (E9, F63, F7, F82)
-        # We stop the build here because these are actual bugs.
+        # Step 1: Stop for actual logic/syntax bugs
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-
-        # Step 2: Style & Complexity
-        # We increase max-complexity for scientific loops and ignore noisy errors.
-        # F401 is common in __init__.py files; E203 is often incompatible with Black.
+        # Step 2: Handle style and complexity for scientific code
         flake8 . --count --max-complexity=15 --max-line-length=120 --statistics \
           --extend-ignore=E203,W503,F401,C901 \
           --per-file-ignores="**/__init__.py:F401"
 
     - name: Type check with mypy
       run: |
-        # Using --ignore-missing-imports helps when Numba/NetworkX aren't fully typed
         mypy quantum_sim --ignore-missing-imports --exclude "visualization/|utils/jit_ops.py"
 
     - name: Run tests with pytest
-      # If you haven't written tests yet, '|| true' prevents the CI from 
-      # turning red just because it found 0 tests.
       run: pytest || echo "No tests found yet, skipping..."
