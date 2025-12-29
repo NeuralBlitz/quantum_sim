@@ -56,8 +56,7 @@ class NumpyBackend(QuantumBackend):
         qubit_last_op_time: Dict[int, float] = {q_id: 0.0 for q_id in range(circuit.num_qubits)}
         current_rho_tensor = self._create_initial_density_matrix(circuit.num_qubits)
         qubit_map = {q_id: q_id for q_id in range(circuit.num_qubits)}
-        # Ensure circuit._components is handled by type checking or 
-        # defined in the QuantumCircuit class.
+        # Ensure circuit._components is handled by type checking 
         for component in getattr(circuit, "_components", []):
             gate_duration = 0.0
             if isinstance(component, GateOperation):
@@ -112,8 +111,6 @@ class NumpyBackend(QuantumBackend):
         probabilities = self.get_probabilities(rho_matrix)
         num_qubits = int(np.log2(rho_matrix.shape[0]))
         outcomes = np.random.choice(len(rho_matrix), size=num_shots, p=probabilities)
-        
-        # Fixed: Explicit type annotation for the dictionary to satisfy mypy
         counts: Dict[str, int] = {}
         for outcome in outcomes:
             bitstring = bin(int(outcome))[2:].zfill(num_qubits)
