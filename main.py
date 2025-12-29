@@ -1,68 +1,34 @@
-# quantum_sim/main.py
-
 import os
-import numpy as np
 import networkx as nx
-
-# Import core components
-from quantum_sim.core.register import Register
-from quantum_sim.core.circuit import QuantumCircuit
-
-# Import optimizer modules
+import numpy as np
 from quantum_sim.optimizer.hardware_quality_sweeper import HardwareQualitySweeper
 
+def main():
+    # Set thread count for Numba JIT operations
+    os.environ["NUMBA_NUM_THREADS"] = "2"
 
-def create_square_graph():
-    """
-    Creates a simple 4-node square graph for Max-Cut testing.
-    """
+    # Create a small graph for Max-Cut QAOA
     graph = nx.Graph()
-    graph.add_edges_from([(0, 1), (1, 2), (2, 3), (3, 0)])
-    return graph
+    graph.add_edges_from([(0, 1), (1, 2), (2, 0)])
 
+    # Define hardware T1 ranges to sweep (in seconds)
+    t1_sweep = [20e-6, 50e-6, 100e-6]
 
-def run_qaoa_hardware_quality_sweep():
-    """
-    Executes a sweep across different T1/T2 tiers to find the p-migration effect.
-    """
-    print("--- Launching Final Expedition: QAOA Hardware Quality Sweep ---")
-
-    graph = create_square_graph()
-    num_qubits = graph.number_of_nodes()
-    print(f"\nGraph defined with {num_qubits} nodes and {graph.number_of_edges()} edges:")
-    print(graph.edges())
-
-    # --- Define Hardware Tiers for the Sweep ---
-    t1_tiers = [20e-6, 50e-6, 100e-6, 200e-6]  # in seconds (20µs to 200µs)
-    t2_ratio_to_t1 = 0.75  # T2 = 0.75 * T1
-    depolarizing_p_global = 0.005  # 0.5% depolarizing error per gate
-
+    # Initialize the sweeper
     sweeper = HardwareQualitySweeper(
         graph=graph,
-        t1_range=t1_tiers,
-        t2_to_t1_ratio=t2_ratio_to_t1,
-        depolarizing_noise_prob=depolarizing_p_global,
-        p_ex=0.0  # Assuming cold environment
+        t1_range=t1_sweep,
+        t2_to_t1_ratio=0.7,
+        depolarizing_noise_prob=0.001,
+        p_ex=0.005
     )
 
-    max_p_layers_to_test = 5
-    optimizer_maxiter_per_p = 50
-    
-    _ = sweeper.run_sweep(
-        max_p_layers=max_p_layers_to_test, 
-        optimizer_maxiter=optimizer_maxiter_per_p
-    )
+    # Run the sweep across circuit depths p=1 to p=4
+    sweep_results = sweeper.run_sweep(max_p_layers=4, optimizer_maxiter=50)
 
-    # --- Generate the final publication-quality scientific visualization ---
-    sweeper.plot_sweep_results(filename="hardware_quality_sweep_results.png")
-    
-    print("\n--- Hardware Quality Sweep Complete. Analysis generated. ---")
-
+    # Output results and save visualization
+    sweeper.plot_sweep_results("qaoa_hardware_sweep.png")
+    print("Optimization sweep completed successfully.")
 
 if __name__ == "__main__":
-    # Prioritize CI threads if set, otherwise use system count
-    num_threads = os.getenv("NUMBA_NUM_THREADS", str(os.cpu_count()))
-    os.environ["NUMBA_NUM_THREADS"] = num_threads
-    print(f"Numba set to use {num_threads} threads for parallel Kraus sum execution.")
-    
-    run_qaoa_hardware_quality_sweep()
+    main()
