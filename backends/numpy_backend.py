@@ -1,10 +1,7 @@
-# quantum_sim/backends/numpy_backend.py
-
 import numpy as np
 from typing import Dict, List, Optional, Any
 
 from quantum_sim.backends.backend import QuantumBackend
-# Note: Ensure GateOperation is defined/exported in quantum_sim.core.circuit
 from quantum_sim.core.circuit import QuantumCircuit, GateOperation
 from quantum_sim.core.noise import NoiseChannel, ThermalRelaxationChannel
 
@@ -56,7 +53,7 @@ class NumpyBackend(QuantumBackend):
         qubit_last_op_time: Dict[int, float] = {q_id: 0.0 for q_id in range(circuit.num_qubits)}
         current_rho_tensor = self._create_initial_density_matrix(circuit.num_qubits)
         qubit_map = {q_id: q_id for q_id in range(circuit.num_qubits)}
-       
+
         for component in getattr(circuit, "_components", []):
             gate_duration = 0.0
             if isinstance(component, GateOperation):
@@ -81,7 +78,8 @@ class NumpyBackend(QuantumBackend):
             current_rho_tensor = component.apply_to_density_matrix(current_rho_tensor, circuit.num_qubits, qubit_map)
 
             # --- Apply PER-GATE Noise ---
-            affected_qubits = [qubit_map[local_id] for local_id in component.get_involved_qubit_local_ids()]
+            local_ids = component.get_involved_qubit_local_ids()
+            affected_qubits = [qubit_map[local_id] for local_id in local_ids]
             for q_global_id in affected_qubits:
                 if q_global_id in self.per_qubit_noise_channels:
                     for noise_channel in self.per_qubit_noise_channels[q_global_id]:
