@@ -1,5 +1,3 @@
-# quantum_sim/optimizer/sweet_spot_mapper.py
-
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -8,7 +6,7 @@ from typing import Dict, List, Tuple, Any
 from quantum_sim.optimizer.qaoa_optimizer import QAOAOptimizer
 from quantum_sim.core.circuit import QuantumCircuit
 from quantum_sim.core.parameter import Parameter
-from quantum_sim.core.noise import DepolarizingChannel, ThermalRelaxationChannel
+from quantum_sim.core.noise import DepolarizingChannel
 from quantum_sim.backends.numpy_backend import NumpyBackend
 from quantum_sim.utils.expectation_value import ExpectationValueCalculator
 from quantum_sim.gates.qaoa_cost_layer import QAOACostLayer
@@ -35,12 +33,18 @@ def create_qaoa_ansatz_for_mapper(graph: nx.Graph, p_layers: int) -> QuantumCirc
         circuit_register = Register(size=num_qubits)
         
         cost_layer = QAOACostLayer(graph, circuit_register, gamma_param, name=f"CostLayer_{i}")
-        qaoa_circuit.add_sub_circuit(cost_layer, qubit_map_for_sub_circuit={j: j for j in range(num_qubits)},
-                                     param_prefix=f"layer{i}_cost")
+        qaoa_circuit.add_sub_circuit(
+            cost_layer, 
+            qubit_map_for_sub_circuit={j: j for j in range(num_qubits)},
+            param_prefix=f"layer{i}_cost"
+        )
         
         mixer_layer = QAOAMixerLayer(circuit_register, beta_param, name=f"MixerLayer_{i}")
-        qaoa_circuit.add_sub_circuit(mixer_layer, qubit_map_for_sub_circuit={j: j for j in range(num_qubits)},
-                                     param_prefix=f"layer{i}_mixer")
+        qaoa_circuit.add_sub_circuit(
+            mixer_layer, 
+            qubit_map_for_sub_circuit={j: j for j in range(num_qubits)},
+            param_prefix=f"layer{i}_mixer"
+        )
 
     return qaoa_circuit
 
@@ -79,12 +83,6 @@ class SweetSpotMapper:
         return backend
 
     def map_sweet_spot(self, max_p_layers: int = 6, optimizer_maxiter: int = 100) -> Dict[int, float]:
-        print(f"--- Starting Sweet Spot Map (Max p={max_p_layers}) ---")
-        
-        t1_val = list(self.t1_times.values())[0] if self.t1_times else 0
-        t2_val = list(self.t2_times.values())[0] if self.t2_times else 0
-        print(f"T1={t1_val*1e6:.0f}us, T2={t2_val*1e6:.0f}us, Noise={self.depolarizing_noise_prob}")
-
         exp_val_calculator = ExpectationValueCalculator(self.num_qubits)
         
         for p in range(1, max_p_layers + 1):
@@ -116,7 +114,6 @@ class SweetSpotMapper:
         plt.grid(True, alpha=0.3)
         plt.xticks(p_values)
         
-        # Fixed: variable name matched to 'min_energies'
         if min_energies:
             best_p_idx = np.argmin(min_energies)
             best_p_val = p_values[best_p_idx]
