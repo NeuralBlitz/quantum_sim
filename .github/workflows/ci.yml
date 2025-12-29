@@ -1,0 +1,76 @@
+# .github/workflows/ci.yml
+
+name: Python CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest # Use the latest Ubuntu runner
+
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11"] # Test across multiple Python versions
+
+    steps:
+    - uses: actions/checkout@v4 # Step 1: Check out the repository code
+      with:
+        fetch-depth: 0 # Needed for some tools like setuptools_scm if used
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip' # Cache pip dependencies for faster builds
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        # Install additional tools for linting/testing if not in requirements.txt
+        pip install flake8 pytest mypy networkx # networkx might not be in reqs if only for local usage
+
+    - name: Lint with flake8
+      run: |
+        # Stop the build if there are Python syntax errors or undefined names
+        # and ignore E203 (whitespace before ':') and W503 (line break before binary operator)
+        # as these are often debated or automatically fixed by black.
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --max-complexity=10 --max-line-length=120 --statistics --extend-ignore=E203,W503,F401,C901
+
+    - name: Run mypy (type checking)
+      # Mypy is crucial for maintaining type integrity in a complex codebase.
+      # It helps catch many potential bugs before runtime.
+      # Exclude the Numba JIT ops as Numba's type inference is different.
+      # Exclude visualization as Matplotlib typing can be complex.
+      run: |
+        mypy quantum_sim --exclude quantum_sim/utils/jit_ops.py --exclude quantum_sim/visualization/circuit_drawer.py
+
+    - name: Run tests with pytest
+      # This assumes you have a `tests/` directory with pytest-compatible tests.
+      # For now, we don't have explicit unit tests but this step is a placeholder
+      # to encourage future test development.
+      run: |
+        pytest
+        # If no tests exist yet, this will simply pass or warn.
+        # Once tests are added, any failure here will break the CI.
+      # For now, we will add a dummy test to prevent pytest from failing if no tests are found.
+      # (This part is not in the YAML but a note for usage)
+      # Example dummy test: `tests/test_dummy.py`
+      # def test_dummy_pass():
+      #   assert True
+
+    - name: Archive code coverage results (Optional)
+      # If you use pytest-cov, this step would upload coverage reports
+      # to services like Codecov or Coveralls.
+      # run: |
+      #   pytest --cov=quantum_sim --cov-report=xml
+      # - uses: codecov/codecov-action@v4
+      #   with:
+      #     token: ${{ secrets.CODECOV_TOKEN }}
+      #     files: ./coverage.xml
+      #     name: codecov-umbrella
