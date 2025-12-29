@@ -1,51 +1,62 @@
+from typing import List, Any, Dict, Optional, Union
 import numpy as np
-from typing import List, Tuple, Dict, Any
 
+class CircuitComponent:
+    """Base class for anything that can be added to a quantum circuit."""
+    
+    def apply_to_density_matrix(self, rho: np.ndarray, num_qubits: int, qubit_map: Dict[int, int]) -> np.ndarray:
+        """Must be implemented by subclasses to evolve the quantum state."""
+        raise NotImplementedError("Subclasses must implement apply_to_density_matrix")
 
-class QuantumCircuit:
-    """Represents a quantum circuit as a sequence of operations."""
+    def get_involved_qubit_local_ids(self) -> List[int]:
+        """Returns the list of qubits this component acts upon."""
+        raise NotImplementedError
 
+class GateOperation(CircuitComponent):
+    """Represents a specific gate acting on specific qubits."""
+    
+    def __init__(self, gate: Any, qubit_ids: List[int]):
+        self.gate = gate
+        self.qubit_ids = qubit_ids
+
+    def get_involved_qubit_local_ids(self) -> List[int]:
+        return self.qubit_ids
+
+    def apply_to_density_matrix(self, rho: np.ndarray, num_qubits: int, qubit_map: Dict[int, int]) -> np.ndarray:
+        # Map local circuit IDs to global backend IDs
+        global_targets = [qubit_map[qid] for qid in self.qubit_ids]
+        return self.gate.apply_to_density_matrix(rho, global_targets, num_qubits)
+
+class QuantumCircuit(CircuitComponent):
+    """A collection of GateOperations and other CircuitComponents."""
+    
     def __init__(self, num_qubits: int, name: str = "Circuit"):
         self.num_qubits = num_qubits
         self.name = name
-        self.operations: List[Tuple[Any, List[int]]] = []
+        # Use List[CircuitComponent] to ensure mypy can track apply_to_density_matrix
+        self._components: List[CircuitComponent] = []
 
-    def add_gate(self, gate, target_qubit_local_ids):
-        """Adds a gate to the circuit."""
-        if not isinstance(target_qubit_local_ids, list):
-            target_qubit_local_ids = [target_qubit_local_ids]
-        self.operations.append((gate, target_qubit_local_ids))
+    def add(self, component: CircuitComponent):
+        """Adds a component (Gate or Sub-circuit) to the circuit."""
+        self._components.append(component)
 
-    def get_parameters(self) -> Dict[str, Any]:
-        """Aggregates all parameters from gates in the circuit."""
-        params = {}
-        for gate, _ in self.operations:
-            params.update(gate.get_parameters())
-        return params
+    def get_involved_qubit_local_ids(self) -> List[int]:
+        """Returns all qubits involved in this circuit's components."""
+        involved = set()
+        for comp in self._components:
+            involved.update(comp.get_involved_qubit_local_ids())
+        return sorted(list(involved))
 
-    def bind_parameters(self, bindings: Dict[str, float]):
-        """Binds numerical values to the circuit parameters."""
-        for gate, _ in self.operations:
-            gate.bind_parameters(bindings)
+    def apply_to_density_matrix(self, rho: np.ndarray, num_qubits: int, qubit_map: Dict[int, int]) -> np.ndarray:
+        """Evolves the state through all components in the circuit."""
+        for component in self._components:
+            rho = component.apply_to_density_matrix(rho, num_qubits, qubit_map)
+        return rho
 
-    def get_visualization_info(self, offset_x: float, offset_y: float,
-                               qubit_y_coords: Dict[int, float]) -> List[Dict[str, Any]]:
-        """Returns a list of dictionaries for the CircuitDrawer."""
-        info = []
-        current_x = offset_x
-        for gate, targets in self.operations:
-            gate_info = {
-                'type': 'gate',
-                'name': gate.name,
-                'num_qubits': len(targets),
-                'x': current_x,
-                'params': {k: p.get_value() for k, p in gate.params.items() if p.is_bound()}
-            }
-            if len(targets) == 1:
-                gate_info['y'] = qubit_y_coords[targets[0]]
-            elif len(targets) == 2:
-                gate_info['control_y'] = qubit_y_coords[targets[0]]
-                gate_info['target_y'] = qubit_y_coords[targets[1]]
-            info.append(gate_info)
-            current_x += 0.8
-        return info
+    def get_qiskit_circuit_instructions(self) -> List[Any]:
+        """Stub to satisfy external backend requirements (like Qiskit)."""
+        instructions: List[Any] = []
+        for comp in self._components:
+            if hasattr(comp, 'get_qiskit_circuit_instructions'):
+                instructions.extend(comp.get_qiskit_circuit_instructions())
+        return instructions
