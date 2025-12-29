@@ -50,17 +50,16 @@ class SweetSpotMapper:
     Systematically maps the optimal QAOA cost as a function of circuit depth (p)
     under specified noise conditions to find the "Sweet Spot".
     """
+
     def __init__(self, graph: nx.Graph, num_qubits: int,
                  t1_times: Dict[int, float], t2_times: Dict[int, float], p_ex: float = 0.0,
                  depolarizing_noise_prob: float = 0.0):
-        
         self.graph = graph
         self.num_qubits = num_qubits
         self.t1_times = t1_times
         self.t2_times = t2_times
         self.p_ex = p_ex
         self.depolarizing_noise_prob = depolarizing_noise_prob
-        
         self.results: Dict[int, float] = {}
         self.optimal_params_history: Dict[int, np.ndarray] = {}
 
@@ -82,37 +81,28 @@ class SweetSpotMapper:
     def map_sweet_spot(self, max_p_layers: int = 6, optimizer_maxiter: int = 100) -> Dict[int, float]:
         print(f"--- Starting Sweet Spot Map (Max p={max_p_layers}) ---")
         
-        # Pull first T1 value for logging
         t1_val = list(self.t1_times.values())[0] if self.t1_times else 0
         t2_val = list(self.t2_times.values())[0] if self.t2_times else 0
-        print(f"T1={t1_val*1e6:.0f}us, T2={t2_val*1e6:.0f}us, Depolarizing_p={self.depolarizing_noise_prob}")
+        print(f"T1={t1_val*1e6:.0f}us, T2={t2_val*1e6:.0f}us, Noise={self.depolarizing_noise_prob}")
 
         exp_val_calculator = ExpectationValueCalculator(self.num_qubits)
         
         for p in range(1, max_p_layers + 1):
-            print(f"\n--- Optimizing for p={p} layers ---")
-            
             backend = self._setup_noisy_backend()
             ansatz = create_qaoa_ansatz_for_mapper(self.graph, p)
-            
-            num_params_for_p = len(ansatz.get_parameters())
-            initial_params = np.random.uniform(0, 2*np.pi, size=num_params_for_p)
+            initial_params = np.random.uniform(0, 2*np.pi, size=len(ansatz.get_parameters()))
 
             optimizer = QAOAOptimizer(ansatz, backend, self.graph, exp_val_calculator,
                                       method='COBYLA', maxiter=optimizer_maxiter)
             
             min_energy, opt_params = optimizer.optimize(initial_params)
-            
             self.results[p] = min_energy
             self.optimal_params_history[p] = opt_params
-            print(f"  Finished p={p}: Min Energy = {min_energy:.4f}")
             
-        print("\n--- Sweet Spot Mapping Complete ---")
         return self.results
 
     def plot_sweet_spot(self, filename: str = "qaoa_sweet_spot.png", title_suffix: str = ""):
         if not self.results:
-            print("No results to plot. Run map_sweet_spot first.")
             return
 
         p_values = sorted(self.results.keys())
@@ -120,21 +110,18 @@ class SweetSpotMapper:
 
         plt.figure(figsize=(10, 6))
         plt.plot(p_values, min_energies, marker='o', linestyle='-', color='indigo')
-        plt.title(f"QAOA Min Energy vs. Circuit Depth {title_suffix}", fontsize=14)
+        plt.title(f"QAOA Min Energy vs. Depth {title_suffix}", fontsize=14)
         plt.xlabel("Circuit Depth (p)", fontsize=12)
-        plt.ylabel("Min Max-Cut Hamiltonian Expectation Value (Lower is Better)", fontsize=12)
+        plt.ylabel("Expectation Value (Lower is Better)", fontsize=12)
         plt.grid(True, alpha=0.3)
         plt.xticks(p_values)
         
-        # Corrected variable reference to min_energies
+        # Fixed: variable name matched to 'min_energies'
         if min_energies:
             best_p_idx = np.argmin(min_energies)
             best_p_val = p_values[best_p_idx]
-            
             plt.axvline(x=best_p_val, color='red', linestyle='--', label=f'Sweet Spot at p={best_p_val}')
             plt.legend()
         
         plt.tight_layout()
         plt.savefig(filename)
-        plt.show()
-        print(f"Sweet spot plot saved to {filename}")
