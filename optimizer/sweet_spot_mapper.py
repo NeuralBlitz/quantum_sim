@@ -1,6 +1,6 @@
 import numpy as np
 import networkx as nx
-from typing import Dict, Any
+from typing import Dict
 from quantum_sim.core.register import Register
 from quantum_sim.core.parameter import Parameter
 from quantum_sim.core.circuit import QuantumCircuit
@@ -9,6 +9,7 @@ from quantum_sim.gates.qaoa_mixer_layer import QAOAMixerLayer
 from quantum_sim.backend.numpy_backend import NumpyBackend
 from quantum_sim.optimizer.qaoa_optimizer import QAOAOptimizer
 from quantum_sim.utils.expectation_value import ExpectationValueCalculator
+
 
 class SweetSpotMapper:
     """
