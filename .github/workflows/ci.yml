@@ -1,5 +1,3 @@
-# .github/workflows/ci.yml
-
 name: Python CI
 
 on:
@@ -46,10 +44,11 @@ jobs:
       # This step will execute pytest.
       # If no test files (e.g., test_*.py) are found, pytest will report "no tests ran".
       # For now, this is suitable as a placeholder until dedicated unit tests are added.
-      run: pytest # CORRECTED: Single-line run command for robustness.
+      run: pytest # Simple, unambiguous run command.
 
-    - name: Archive code coverage results (Optional)
-      # Uncomment and configure if using pytest-cov and a code coverage service.
+    - name: Archive code coverage results (Optional - uncomment to enable)
+      # To enable code coverage, uncomment the following lines and configure your Codecov token.
+      # For example:
       # run: |
       #   pytest --cov=quantum_sim --cov-report=xml
       # - uses: codecov/codecov-action@v4
