@@ -1,7 +1,7 @@
 import os
 import networkx as nx
-import numpy as np
 from quantum_sim.optimizer.hardware_quality_sweeper import HardwareQualitySweeper
+
 
 def main():
     # Set thread count for Numba JIT operations
@@ -24,11 +24,13 @@ def main():
     )
 
     # Run the sweep across circuit depths p=1 to p=4
-    sweep_results = sweeper.run_sweep(max_p_layers=4, optimizer_maxiter=50)
+    # F841 Fix: Removed unused assignment to sweep_results
+    sweeper.run_sweep(max_p_layers=4, optimizer_maxiter=50)
 
     # Output results and save visualization
     sweeper.plot_sweep_results("qaoa_hardware_sweep.png")
     print("Optimization sweep completed successfully.")
+
 
 if __name__ == "__main__":
     main()
