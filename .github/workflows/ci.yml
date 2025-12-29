@@ -42,7 +42,7 @@ jobs:
 
     - name: Type check with mypy
       run: |
-        mypy quantum_sim --ignore-missing-imports --exclude "visualization/|utils/jit_ops.py"
+        mypy .--ignore-missing-imports --exclude "visualization/|utils/jit_ops.py"
 
     - name: Run tests with pytest
       run: pytest || echo "No tests found yet, skipping..."
