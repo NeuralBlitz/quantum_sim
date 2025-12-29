@@ -1,12 +1,12 @@
 # quantum_sim/backends/backend.py
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any
+from typing import Dict, TYPE_CHECKING
 import numpy as np
 
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from quantum_sim.core.circuit import QuantumCircuit
+
 
 class QuantumBackend(ABC):
     """
@@ -14,6 +14,7 @@ class QuantumBackend(ABC):
     Defines the interface for running circuits and obtaining results.
     All backends now operate on density matrices.
     """
+
     @abstractmethod
     def run_circuit(self, circuit: "QuantumCircuit") -> np.ndarray:
         """
