@@ -50,3 +50,6 @@ jobs:
     - name: Run Mypy
       run: mypy .
 
+    - name: Debug Path
+      run: ls -R
+
