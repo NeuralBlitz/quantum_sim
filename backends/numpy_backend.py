@@ -56,7 +56,6 @@ class NumpyBackend(QuantumBackend):
         qubit_last_op_time: Dict[int, float] = {q_id: 0.0 for q_id in range(circuit.num_qubits)}
         current_rho_tensor = self._create_initial_density_matrix(circuit.num_qubits)
         qubit_map = {q_id: q_id for q_id in range(circuit.num_qubits)}
-
         # Ensure circuit._components is handled by type checking or 
         # defined in the QuantumCircuit class.
         for component in getattr(circuit, "_components", []):
