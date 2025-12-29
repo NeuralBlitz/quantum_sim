@@ -46,3 +46,7 @@ jobs:
 
     - name: Run tests with pytest
       run: pytest || echo "No tests found yet, skipping..."
+
+    - name: Run Mypy
+      run: mypy .
+
