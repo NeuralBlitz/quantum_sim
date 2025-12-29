@@ -1,3 +1,3 @@
-# quantum_sim/backends/__init__.py
+from .numpy_backend import NumpyBackend
 
-# This file marks 'backends' as a Python package.
+__all__ = ["NumpyBackend"]
