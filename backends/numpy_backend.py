@@ -1,9 +1,10 @@
 # quantum_sim/backends/numpy_backend.py
 
 import numpy as np
-from typing import Dict, List
+from typing import Dict, List, Optional, Any
 
 from quantum_sim.backends.backend import QuantumBackend
+# Note: Ensure GateOperation is defined/exported in quantum_sim.core.circuit
 from quantum_sim.core.circuit import QuantumCircuit, GateOperation
 from quantum_sim.core.noise import NoiseChannel, ThermalRelaxationChannel
 
@@ -11,16 +12,15 @@ from quantum_sim.core.noise import NoiseChannel, ThermalRelaxationChannel
 class NumpyBackend(QuantumBackend):
     """
     A quantum simulation backend that uses NumPy for density matrix manipulation
-    and accurately models time-dependent noise (T1/T2) and per-gate noise using Numba JIT acceleration.
-    Acts as a time-aware scheduling engine.
+    and accurately models time-dependent noise (T1/T2) and per-gate noise.
     """
 
     def __init__(self,
                  num_qubits: int,
-                 t1_times: Dict[int, float] = None,
-                 t2_times: Dict[int, float] = None,
+                 t1_times: Optional[Dict[int, float]] = None,
+                 t2_times: Optional[Dict[int, float]] = None,
                  p_ex: float = 0.0,
-                 per_qubit_noise_channels: Dict[int, List[NoiseChannel]] = None):
+                 per_qubit_noise_channels: Optional[Dict[int, List[NoiseChannel]]] = None):
         """
         Initializes the backend with hardware-specific noise parameters.
         """
@@ -57,12 +57,16 @@ class NumpyBackend(QuantumBackend):
         current_rho_tensor = self._create_initial_density_matrix(circuit.num_qubits)
         qubit_map = {q_id: q_id for q_id in range(circuit.num_qubits)}
 
-        for component in circuit._components:
+        # Ensure circuit._components is handled by type checking or 
+        # defined in the QuantumCircuit class.
+        for component in getattr(circuit, "_components", []):
             gate_duration = 0.0
             if isinstance(component, GateOperation):
                 gate_duration = component.gate.duration
             elif isinstance(component, QuantumCircuit):
-                durations = [op.gate.duration for op in component._components if isinstance(op, GateOperation)]
+                # Safely access internal components of sub-circuits
+                sub_comps = getattr(component, "_components", [])
+                durations = [op.gate.duration for op in sub_comps if isinstance(op, GateOperation)]
                 gate_duration = max(durations) if durations else 0.0
 
             # --- Apply IDLE Noise BEFORE operation ---
@@ -99,7 +103,8 @@ class NumpyBackend(QuantumBackend):
                     current_rho_tensor, q_id, circuit.num_qubits, dt=dt_final
                 )
 
-        return current_rho_tensor.reshape((2**circuit.num_qubits, 2**circuit.num_qubits))
+        final_dim = 2**circuit.num_qubits
+        return current_rho_tensor.reshape((final_dim, final_dim))
 
     def get_probabilities(self, rho_matrix: np.ndarray) -> np.ndarray:
         return np.diag(rho_matrix).real
@@ -108,8 +113,10 @@ class NumpyBackend(QuantumBackend):
         probabilities = self.get_probabilities(rho_matrix)
         num_qubits = int(np.log2(rho_matrix.shape[0]))
         outcomes = np.random.choice(len(rho_matrix), size=num_shots, p=probabilities)
-        counts = {}
+        
+        # Fixed: Explicit type annotation for the dictionary to satisfy mypy
+        counts: Dict[str, int] = {}
         for outcome in outcomes:
-            bitstring = bin(outcome)[2:].zfill(num_qubits)
+            bitstring = bin(int(outcome))[2:].zfill(num_qubits)
             counts[bitstring] = counts.get(bitstring, 0) + 1
         return counts
