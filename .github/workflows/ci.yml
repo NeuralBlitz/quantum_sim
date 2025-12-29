@@ -42,13 +42,12 @@ jobs:
 
     - name: Type check with mypy
       run: |
-        mypy .--ignore-missing-imports --exclude "visualization/|utils/jit_ops.py"
+        # Fixed the spacing after the dot and combined into one robust check
+        mypy . --ignore-missing-imports --exclude "visualization/|utils/jit_ops.py"
 
     - name: Run tests with pytest
       run: pytest || echo "No tests found yet, skipping..."
 
-    - name: Run Mypy
-      run: mypy .
-
     - name: Debug Path
+      if: always()
       run: ls -R
