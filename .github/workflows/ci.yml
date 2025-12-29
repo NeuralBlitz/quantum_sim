@@ -31,7 +31,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install flake8 pytest mypy networkx
+        pip install flake8 pytest mypy networkx # networkx might not be in reqs if only for local usage
 
     - name: Lint with flake8
       run: |
@@ -44,19 +44,9 @@ jobs:
 
     - name: Run tests with pytest
       # This step will execute pytest.
-      # If no test files (e.g., test_*.py) are found in the repository,
-      # pytest will report "no tests ran" but will not fail the workflow.
-      # This is suitable as a placeholder until dedicated unit tests are added.
-      run: |
-        pytest
-      # To ensure pytest *always* passes if no tests are explicitly defined,
-      # a dummy test file `tests/test_dummy.py` can be added:
-      # quantum_sim/tests/
-      # └── test_dummy.py
-      #
-      # # test_dummy.py contents:
-      # def test_dummy_pass():
-      #   assert True
+      # If no test files (e.g., test_*.py) are found, pytest will report "no tests ran".
+      # For now, this is suitable as a placeholder until dedicated unit tests are added.
+      run: pytest # CORRECTED: Single-line run command for robustness.
 
     - name: Archive code coverage results (Optional)
       # Uncomment and configure if using pytest-cov and a code coverage service.
